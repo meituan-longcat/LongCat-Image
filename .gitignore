@@ -1,0 +1,20 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+.idea
+*.py[cod]
+*$py.class
+.DS_Store
+# C extensions
+*.so
+*.bin
+*.log
+*.egg-info
+*.egg
+
+
+# Distribution / packaging
+.Python
+**/debug/
+**/output/
+**/build/
+weights/*
