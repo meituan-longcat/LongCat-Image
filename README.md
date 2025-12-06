@@ -390,7 +390,7 @@ We kindly encourage citation of our work if you find it useful.
 
 ## Acknowledgements
 
-We would like to thank the contributors to the [FLUX.1](https://github.com/black-forest-labs/flux), [Qwen2.5-VL](https://github.com/QwenLM/Qwen2.5-VL), [Diffusers](https://github.com/huggingface/diffusers) and [HuggingFace](https://huggingface.co) repositories, for their open research.
+We would like to thank the contributors to the [FLUX.1](https://github.com/black-forest-labs/flux), [Qwen2.5-VL](https://huggingface.co/Qwen/Qwen2.5-VL-7B-Instruct), [Diffusers](https://github.com/huggingface/diffusers) and [HuggingFace](https://huggingface.co) repositories, for their open research.
 
 ## Contact
 
