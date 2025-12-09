@@ -362,7 +362,7 @@ The quantitative evaluation results on public benchmarks demonstrate LongCat-Ima
 
 ## Training Pipeline
 
-We provide training code that enables advanced development of our LongCat‑Image‑Dev model, including SFT, LoRA, DPO, and Edit training.
+We provide training code that enables advanced development of our LongCat‑Image‑Dev and model, including SFT, LoRA, DPO, and Image Editing training.
 
 See [TRAINING.md](./train_examples/README.md) for detailed instructions.
 
@@ -373,6 +373,8 @@ Community works are welcome! Please PR or inform us in Issue to add your work.
 - [LoRA Adapters] Fine-tuned models for specific styles and domains
 - [ComfyUI Integration] Native support for ComfyUI workflow
 - [Diffusers Pipeline] HuggingFace Diffusers integration
+- [ComfyUI Longcat Image](https://github.com/sooxt98/comfyui_longcat_image) - Custom node extension for ComfyUI workflow.
+
 
 ## License Agreement
 
