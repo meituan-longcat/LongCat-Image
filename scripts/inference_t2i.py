@@ -9,7 +9,7 @@ if __name__ == '__main__':
 
     device = torch.device('cuda')
     checkpoint_dir = './weights/LongCat-Image'
-
+    
     text_processor = AutoProcessor.from_pretrained( checkpoint_dir, subfolder = 'tokenizer'  )
     transformer = LongCatImageTransformer2DModel.from_pretrained( checkpoint_dir , subfolder = 'transformer', 
         torch_dtype=torch.bfloat16, use_safetensors=True).to(device)
@@ -29,13 +29,18 @@ if __name__ == '__main__':
     if enable_prompt_rewrite_api:
         prompt = prompt_rewrite_deepseek(prompt)
 
+    height = 768
+    width = 1344
+    cfg = 2.5 # original 4.5
+    steps = 30 # original 50
+    
     image = pipe(
         prompt,
         negative_prompt='',
-        height=768,
-        width=1344,
-        guidance_scale=4.5,
-        num_inference_steps=50,
+        height=height,
+        width=width,
+        guidance_scale=cfg,
+        num_inference_steps=steps,
         num_images_per_prompt=1,
         generator= torch.Generator("cpu").manual_seed(43),
         enable_cfg_renorm=True,

@@ -8,6 +8,7 @@ if __name__ == '__main__':
 
     device = torch.device('cuda')
     checkpoint_dir = './weights/LongCat-Image-Edit'
+    
     text_processor = AutoProcessor.from_pretrained( checkpoint_dir, subfolder = 'tokenizer'  )
     transformer = LongCatImageTransformer2DModel.from_pretrained( checkpoint_dir , subfolder = 'transformer', 
         torch_dtype=torch.bfloat16, use_safetensors=True).to(device)
@@ -24,12 +25,16 @@ if __name__ == '__main__':
     generator = torch.Generator("cpu").manual_seed(43)
     img = Image.open('assets/test.png').convert('RGB')
     prompt = '将猫变成狗'
+    
+    cfg = 2.5 # original 4.5
+    steps = 30 # original 50
+    
     image = pipe(
         img,
         prompt,
         negative_prompt='',
-        guidance_scale=4.5,
-        num_inference_steps=50,
+        guidance_scale=cfg,
+        num_inference_steps=steps,
         num_images_per_prompt=1,
         generator=generator
     ).images[0]
