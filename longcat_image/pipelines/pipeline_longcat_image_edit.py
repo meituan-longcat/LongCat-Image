@@ -340,14 +340,14 @@ class LongCatImageEditPipeline(
         generator: Optional[Union[torch.Generator,List[torch.Generator]]] = None,
         latents: Optional[torch.FloatTensor] = None,
         prompt_embeds: Optional[torch.FloatTensor] = None,
-        pooled_prompt_embeds: Optional[torch.FloatTensor] = None,
+        text_ids: Optional[torch.FloatTensor] = None,
         negative_prompt_embeds: Optional[torch.FloatTensor] = None,
-        negative_pooled_prompt_embeds: Optional[torch.FloatTensor] = None,
         output_type: Optional[str] = "pil",
         return_dict: bool = True,
         joint_attention_kwargs: Optional[Dict[str, Any]] = None,
     ):
-
+        # only support single image
+        image = image[0] if isinstance(image, list) else image
         image_size = image[0].size if isinstance(image, list) else image.size
         calculated_width, calculated_height = calculate_dimensions(1024 * 1024, image_size[0]*1.0/image_size[1])
 
@@ -367,21 +367,32 @@ class LongCatImageEditPipeline(
         device = self._execution_device
 
         image = self.image_processor.resize(image, calculated_height, calculated_width)
-        prompt_image = self.image_processor.resize(image, calculated_height//2, calculated_width//2)
         image = self.image_processor.preprocess(image, calculated_height, calculated_width)
-
-        negative_prompt = '' if negative_prompt is None else negative_prompt
-        negative_prompt = [negative_prompt]*num_images_per_prompt
-        prompt = [prompt]*num_images_per_prompt
-
-        prompt_embeds, text_ids = self.encode_prompt(
-            image=prompt_image,
-            prompts=prompt
-        )
-        negative_prompt_embeds, negative_text_ids = self.encode_prompt(
-            image=prompt_image,
-            prompts=negative_prompt
-        )
+        
+        # skip encode prompt when prompt_embeds and text_ids are passed
+        if prompt_embeds is None and text_ids is None:
+            prompt = [prompt]*num_images_per_prompt
+            prompt_image = self.image_processor.resize(image, calculated_height//2, calculated_width//2)
+            prompt_embeds, text_ids = self.encode_prompt(
+                image=prompt_image,
+                prompts=prompt,
+                device=device,
+                dtype=torch.float64
+            )
+        
+        # skip encode prompt when negative_prompt_embeds is passed or negative_prompt is not none and negative_prompt is not empty
+        if negative_prompt_embeds is None and (negative_prompt is not None and negative_prompt != ""):
+            negative_prompt = '' if negative_prompt is None else negative_prompt
+            negative_prompt = [negative_prompt]*num_images_per_prompt
+            negative_prompt_embeds, _ = self.encode_prompt(
+                image=prompt_image,
+                prompts=negative_prompt, 
+                device = device, 
+                dtype=torch.float64
+            )
+        else:
+            # zero out the negative prompt embeddings
+            negative_prompt_embeds = torch.zeros_like(prompt_embeds)
 
         # 4. Prepare latent variables
         num_channels_latents = 16
