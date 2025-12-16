@@ -41,6 +41,10 @@ photorealism, deployment efficiency, and developer accessibility prevalent in cu
 
 [//]: # (For more details, please refer to the comprehensive [***LongCat-Image Technical Report***]&#40;https://arxiv.org/abs/2412.11963&#41;.)
 
+### 📣 News
+- 🌟 **[2025-12-16]** LongCat-Image is now available in Diffusers!🤗 Please check the example below for detail! Thanks to the Diffusers team for their technical support.
+
+
 ## 🎨 Showcase
 
 ### Text-to-Image
@@ -67,15 +71,14 @@ cd LongCat-Image
 ```
 
 Install dependencies:
-
 ```shell
 # create conda environment
 conda create -n longcat-image python=3.10
 conda activate longcat-image
 
-# install other requirements
-pip install -r requirements.txt
-python setup.py develop
+# for inference, install other requirements
+pip install -r infer_requirements.txt
+pip install git+https://github.com/huggingface/diffusers
 ```
 
 ### Model Download
@@ -120,15 +123,6 @@ python setup.py develop
 </div>
 
 
-
-Download models using huggingface-cli:
-```shell
-pip install "huggingface_hub[cli]"
-huggingface-cli download meituan-longcat/LongCat-Image --local-dir ./weights/LongCat-Image
-huggingface-cli download meituan-longcat/LongCat-Image-Dev --local-dir ./weights/LongCat-Image-Dev
-huggingface-cli download meituan-longcat/LongCat-Image-Edit --local-dir ./weights/LongCat-Image-Edit
-```
-
 ### Run Text-to-Image Generation
 > [!TIP]
 > Leveraging a stronger LLM for prompt refinement can further enhance image generation quality. Please refer to [inference_t2i.py](https://github.com/meituan-longcat/LongCat-Image/blob/main/scripts/inference_t2i.py#L28) for detailed usage instructions.
@@ -142,40 +136,29 @@ huggingface-cli download meituan-longcat/LongCat-Image-Edit --local-dir ./weight
 
 ```python
 import torch
-from transformers import AutoProcessor
-from longcat_image.models import LongCatImageTransformer2DModel
-from longcat_image.pipelines import LongCatImagePipeline
+from diffusers import LongCatImagePipeline
 
-device = torch.device('cuda')
-checkpoint_dir = './weights/LongCat-Image'
+if __name__ == '__main__':
+    device = torch.device('cuda')
 
-text_processor = AutoProcessor.from_pretrained( checkpoint_dir, subfolder = 'tokenizer'  )
-transformer = LongCatImageTransformer2DModel.from_pretrained( checkpoint_dir , subfolder = 'transformer', 
-    torch_dtype=torch.bfloat16, use_safetensors=True).to(device)
+    pipe = LongCatImagePipeline.from_pretrained("meituan-longcat/LongCat-Image", torch_dtype= torch.bfloat16 )
+    # pipe.to(device, torch.bfloat16)  # Uncomment for high VRAM devices (Faster inference)
+    pipe.enable_model_cpu_offload()  # Offload to CPU to save VRAM (Required ~17 GB); slower but prevents OOM
 
-pipe = LongCatImagePipeline.from_pretrained(
-    checkpoint_dir,
-    transformer=transformer,
-    text_processor=text_processor,
-    torch_dtype=torch.bfloat16
-)
-# pipe.to(device, torch.bfloat16)  # Uncomment for high VRAM devices (Faster inference)
-pipe.enable_model_cpu_offload()  # Offload to CPU to save VRAM (Required ~17 GB); slower but prevents OOM
-
-prompt = '一个年轻的亚裔女性，身穿黄色针织衫，搭配白色项链。她的双手放在膝盖上，表情恬静。背景是一堵粗糙的砖墙，午后的阳光温暖地洒在她身上，营造出一种宁静而温馨的氛围。镜头采用中距离视角，突出她的神态和服饰的细节。光线柔和地打在她的脸上，强调她的五官和饰品的质感，增加画面的层次感与亲和力。整个画面构图简洁，砖墙的纹理与阳光的光影效果相得益彰，突显出人物的优雅与从容。'
-
-image = pipe(
-    prompt,
-    height=768,
-    width=1344,
-    guidance_scale=4.5,
-    num_inference_steps=50,
-    num_images_per_prompt=1,
-    generator=torch.Generator("cpu").manual_seed(43),
-    enable_cfg_renorm=True,
-    enable_prompt_rewrite=True  # Reusing the text encoder as a built-in prompt rewriter
-).images[0]
-image.save('./t2i_example.png')
+    prompt = '一个年轻的亚裔女性，身穿黄色针织衫，搭配白色项链。她的双手放在膝盖上，表情恬静。背景是一堵粗糙的砖墙，午后的阳光温暖地洒在她身上，营造出一种宁静而温馨的氛围。镜头采用中距离视角，突出她的神态和服饰的细节。光线柔和地打在她的脸上，强调她的五官和饰品的质感，增加画面的层次感与亲和力。整个画面构图简洁，砖墙的纹理与阳光的光影效果相得益彰，突显出人物的优雅与从容。'
+    
+    image = pipe(
+        prompt,
+        height=768,
+        width=1344,
+        guidance_scale=4.0,
+        num_inference_steps=50,
+        num_images_per_prompt=1,
+        generator=torch.Generator("cpu").manual_seed(43),
+        enable_cfg_renorm=True,
+        enable_prompt_rewrite=True
+    ).images[0]
+    image.save(f'./longcat_image_t2i_example.png')
 ```
 
 ### Run Image Editing
@@ -183,39 +166,28 @@ image.save('./t2i_example.png')
 ```python
 import torch
 from PIL import Image
-from transformers import AutoProcessor
-from longcat_image.models import LongCatImageTransformer2DModel
-from longcat_image.pipelines import LongCatImageEditPipeline
+from diffusers import LongCatImageEditPipeline
 
-device = torch.device('cuda')
-checkpoint_dir = './weights/LongCat-Image-Edit'
-text_processor = AutoProcessor.from_pretrained( checkpoint_dir, subfolder = 'tokenizer'  )
-transformer = LongCatImageTransformer2DModel.from_pretrained( checkpoint_dir , subfolder = 'transformer', 
-    torch_dtype=torch.bfloat16, use_safetensors=True).to(device)
+if __name__ == '__main__':
+    device = torch.device('cuda')
 
-pipe = LongCatImageEditPipeline.from_pretrained(
-    checkpoint_dir,
-    transformer=transformer,
-    text_processor=text_processor,
-    torch_dtype=torch.bfloat16
-)
-# pipe.to(device, torch.bfloat16)  # Uncomment for high VRAM devices (Faster inference)
-pipe.enable_model_cpu_offload()  # Offload to CPU to save VRAM (Required ~19 GB); slower but prevents OOM
+    pipe = LongCatImageEditPipeline.from_pretrained("meituan-longcat/LongCat-Image-Edit", torch_dtype= torch.bfloat16 )
+    # pipe.to(device, torch.bfloat16)  # Uncomment for high VRAM devices (Faster inference)
+    pipe.enable_model_cpu_offload()  # Offload to CPU to save VRAM (Required ~18 GB); slower but prevents OOM
 
-generator = torch.Generator("cpu").manual_seed(43)
-img = Image.open('assets/test.png').convert('RGB')
-prompt = '将猫变成狗'
-image = pipe(
-    img,
-    prompt,
-    negative_prompt='',
-    guidance_scale=4.5,
-    num_inference_steps=50,
-    num_images_per_prompt=1,
-    generator=generator
-).images[0]
+    img = Image.open('assets/test.png').convert('RGB')
+    prompt = '将猫变成狗'
+    image = pipe(
+        img,
+        prompt,
+        negative_prompt='',
+        guidance_scale=4.5,
+        num_inference_steps=50,
+        num_images_per_prompt=1,
+        generator=torch.Generator("cpu").manual_seed(43)
+    ).images[0]
 
-image.save('./edit_example.png')
+    image.save('./edit_example.png')
 
 ```
 
@@ -361,6 +333,13 @@ The quantitative evaluation results on public benchmarks demonstrate LongCat-Ima
 | FLUX.1 Kontext [Pro] vs LongCat-Image-Edit | 39.5% vs **60.5%** | 37% vs **63%** |
 
 ## Training Pipeline
+
+```shell
+cd LongCat-Image
+# for training, install other requirements
+pip install -r train_requirements.txt
+python setup.py develop
+```
 
 We provide training code that enables advanced development of our LongCat‑Image‑Dev and model, including SFT, LoRA, DPO, and Image Editing training.
 
