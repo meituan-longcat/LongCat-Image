@@ -1,0 +1,47 @@
+# 1.Data setting
+data_txt_root: '/dataset/example/train_data_info.txt'  # data csv_filepath
+resolution: 1024 
+aspect_ratio_type: 'mar_1024'  # data bucketing strategy, mar_256、mar_512、mar_1024
+null_text_ratio: 0
+dataloader_num_workers: 8
+train_batch_size: 2
+repeats: 1
+
+prompt_template_encode_prefix: "<|im_start|>system\nAs an image editing expert, first analyze the content and attributes of the input image(s). Then, based on the user's editing instructions, clearly and precisely determine how to modify the given image(s), ensuring that only the specified parts are altered and all other aspects remain consistent with the original(s).<|im_end|>\n<|im_start|>user\n<|vision_start|><|image_pad|><|vision_end|>"
+prompt_template_encode_suffix: '<|im_end|>\n<|im_start|>assistant\n'
+prompt_template_encode_start_idx: 67
+prompt_template_encode_end_idx: 5
+
+# 2. Model setting
+text_tokenizer_max_length: 512  # tokenizer max len 
+pretrained_model_name_or_path: "./weights/LongCat-Image-Edit" # root directory of the model，with vae、transformer、scheduler eta;
+diffusion_pretrain_weight:  null # if a specified diffusion weight path is provided, load the model parameters from the current directory.
+use_dynamic_shifting: true #  scheduler dynamic shifting
+resume_from_checkpoint: latest
+  # - "latest"  # Loads most recent step checkpoint
+  # - "/path/to/checkpoint"  # Resumes from specified directory
+
+# 3. Training setting
+use_ema: False
+ema_rate: 0.999
+mixed_precision: 'bf16'
+max_train_steps: 100000
+gradient_accumulation_steps: 1
+gradient_checkpointing: true
+gradient_clip: 1.0
+learning_rate: 3.0e-6
+adam_weight_decay: 1.0e-3
+adam_epsilon: 1.0e-8
+adam_beta1: 0.9
+adam_beta2: 0.999
+lr_num_cycles: 1
+lr_power: 1.0
+lr_scheduler: 'constant'
+lr_warmup_steps: 1000
+beta_dpo: 4000
+
+#4. Log setting
+log_interval: 20
+save_model_steps: 1000
+work_dir: 'output/edit_dpo_model'
+seed: 43

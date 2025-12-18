@@ -6,7 +6,7 @@
 <hr>
 
 <div align="center" style="line-height: 1;">
-    <a href='https://github.com/meituan-longcat/LongCat-Image/blob/main/assets/LongCat_Image_Technical_Report.pdf'><img src='https://img.shields.io/badge/Technical Report-PDF-red'></a>
+    <a href='https://arxiv.org/pdf/2512.07584'><img src='https://img.shields.io/badge/Technical Report-PDF-red'></a>
     <a href='https://longcat.ai/'><img src="https://img.shields.io/badge/🤖%20Demo-LongCat--Image-ADFF2F?color=29E154&logoColor=white"></a>
     <a href='https://github.com/meituan-longcat/LongCat-Image'><img src='https://img.shields.io/badge/GitHub-Code-black'></a>
     <a href='https://github.com/meituan-longcat/LongCat-Flash-Chat/blob/main/figures/wechat_official_accounts.png'><img src='https://img.shields.io/badge/WeChat-LongCat-brightgreen?logo=wechat&logoColor=white'></a>
@@ -41,7 +41,14 @@ photorealism, deployment efficiency, and developer accessibility prevalent in cu
 
 [//]: # (For more details, please refer to the comprehensive [***LongCat-Image Technical Report***]&#40;https://arxiv.org/abs/2412.11963&#41;.)
 
-## 🎨 Showcase
+### News
+- 🔥 **[2025-12-16]** LongCat-Image is now fully supported in **Diffusers**!
+- 🔥 **[2025-12-09]** [T2I-CoreBench](https://t2i-corebench.github.io/) results are out! LongCat-Image ranks **2nd** among all open-source models in comprehensive performance, surpassed only by the 32B-parameter Flux2.dev.
+- 🔥 **[2025-12-08]** We released our [Technical Report](https://www.arxiv.org/abs/2512.07584) on arXiv!
+- 🔥 **[2025-12-05]** We released the weights for LongCat-Image, LongCat-Image-Dev, and LongCat-Image-Image on [Hugging Face](https://huggingface.co/meituan-longcat/models) and [ModelScope](https://modelscope.cn/organization/meituan-longcat?tab=model).
+
+
+## Showcase
 
 ### Text-to-Image
 
@@ -59,23 +66,14 @@ photorealism, deployment efficiency, and developer accessibility prevalent in cu
 
 ### Installation
 
-Clone the repo:
-
-```shell
-git clone --single-branch --branch main https://github.com/meituan-longcat/LongCat-Image
-cd LongCat-Image
-```
-
-Install dependencies:
-
 ```shell
 # create conda environment
 conda create -n longcat-image python=3.10
 conda activate longcat-image
 
-# install other requirements
-pip install -r requirements.txt
-python setup.py develop
+# install requirements for model inference
+pip install -r infer_requirements.txt
+pip install git+https://github.com/huggingface/diffusers
 ```
 
 ### Model Download
@@ -120,89 +118,71 @@ python setup.py develop
 </div>
 
 
-
-Download models using huggingface-cli:
-```shell
-pip install "huggingface_hub[cli]"
-huggingface-cli download meituan-longcat/LongCat-Image --local-dir ./weights/LongCat-Image
-huggingface-cli download meituan-longcat/LongCat-Image-Dev --local-dir ./weights/LongCat-Image-Dev
-huggingface-cli download meituan-longcat/LongCat-Image-Edit --local-dir ./weights/LongCat-Image-Edit
-```
-
 ### Run Text-to-Image Generation
-**💡 Tip**: Using a stronger LLM model for prompt engineering can further improve image generation quality. Please refer to [inference_t2i.py](https://github.com/meituan-longcat/LongCat-Image/blob/main/scripts/inference_t2i.py#L28) for detailed usage.
-```shell
+> [!TIP]
+> Leveraging a stronger LLM for prompt refinement can further enhance image generation quality. Please refer to [inference_t2i.py](https://github.com/meituan-longcat/LongCat-Image/blob/main/scripts/inference_t2i.py#L28) for detailed usage instructions.
+
+> [!CAUTION]
+> **📝 Special Handling for Text Rendering**
+>
+> For both Text-to-Image and Image Editing tasks involving text generation, **you must enclose the target text within single or double quotation marks** (both English '...' / "..." and Chinese ‘...’ / “...” styles are supported).
+>
+> **Reasoning:** The model utilizes a specialized **character-level encoding** strategy specifically for quoted content. Failure to use explicit quotation marks prevents this mechanism from triggering, which will severely compromise the text rendering capability.
+
+```python
 import torch
-from transformers import AutoProcessor
-from longcat_image.models import LongCatImageTransformer2DModel
-from longcat_image.pipelines import LongCatImagePipeline
+from diffusers import LongCatImagePipeline
 
-device = torch.device('cuda')
-checkpoint_dir = './weights/LongCat-Image'
+if __name__ == '__main__':
+    device = torch.device('cuda')
 
-text_processor = AutoProcessor.from_pretrained( checkpoint_dir, subfolder = 'tokenizer'  )
-transformer = LongCatImageTransformer2DModel.from_pretrained( checkpoint_dir , subfolder = 'transformer', 
-    torch_dtype=torch.bfloat16, use_safetensors=True).to(device)
+    pipe = LongCatImagePipeline.from_pretrained("meituan-longcat/LongCat-Image", torch_dtype= torch.bfloat16 )
+    # pipe.to(device, torch.bfloat16)  # Uncomment for high VRAM devices (Faster inference)
+    pipe.enable_model_cpu_offload()  # Offload to CPU to save VRAM (Required ~17 GB); slower but prevents OOM
 
-pipe = LongCatImagePipeline.from_pretrained(
-    checkpoint_dir,
-    transformer=transformer,
-    text_processor=text_processor
-)
-pipe.to(device, torch.bfloat16)
-
-prompt = '一个年轻的亚裔女性，身穿黄色针织衫，搭配白色项链。她的双手放在膝盖上，表情恬静。背景是一堵粗糙的砖墙，午后的阳光温暖地洒在她身上，营造出一种宁静而温馨的氛围。镜头采用中距离视角，突出她的神态和服饰的细节。光线柔和地打在她的脸上，强调她的五官和饰品的质感，增加画面的层次感与亲和力。整个画面构图简洁，砖墙的纹理与阳光的光影效果相得益彰，突显出人物的优雅与从容。'
-
-image = pipe(
-    prompt,
-    height=768,
-    width=1344,
-    guidance_scale=4.5,
-    num_inference_steps=50,
-    num_images_per_prompt=1,
-    generator=torch.Generator("cpu").manual_seed(43),
-    enable_cfg_renorm=True,
-    enable_prompt_rewrite=True  # Reusing the text encoder as a built-in prompt rewriter
-).images[0]
-image.save('./t2i_example.png')
+    prompt = '一个年轻的亚裔女性，身穿黄色针织衫，搭配白色项链。她的双手放在膝盖上，表情恬静。背景是一堵粗糙的砖墙，午后的阳光温暖地洒在她身上，营造出一种宁静而温馨的氛围。镜头采用中距离视角，突出她的神态和服饰的细节。光线柔和地打在她的脸上，强调她的五官和饰品的质感，增加画面的层次感与亲和力。整个画面构图简洁，砖墙的纹理与阳光的光影效果相得益彰，突显出人物的优雅与从容。'
+    
+    image = pipe(
+        prompt,
+        height=768,
+        width=1344,
+        guidance_scale=4.0,
+        num_inference_steps=50,
+        num_images_per_prompt=1,
+        generator=torch.Generator("cpu").manual_seed(43),
+        enable_cfg_renorm=True,
+        enable_prompt_rewrite=True
+    ).images[0]
+    image.save('./t2i_example.png')
 ```
 
 ### Run Image Editing
 
-```shell
+```python
 import torch
 from PIL import Image
-from transformers import AutoProcessor
-from longcat_image.models import LongCatImageTransformer2DModel
-from longcat_image.pipelines import LongCatImageEditPipeline
+from diffusers import LongCatImageEditPipeline
 
-device = torch.device('cuda')
-checkpoint_dir = './weights/LongCat-Image-Edit'
-text_processor = AutoProcessor.from_pretrained( checkpoint_dir, subfolder = 'tokenizer'  )
-transformer = LongCatImageTransformer2DModel.from_pretrained( checkpoint_dir , subfolder = 'transformer', 
-    torch_dtype=torch.bfloat16, use_safetensors=True).to(device)
+if __name__ == '__main__':
+    device = torch.device('cuda')
 
-pipe = LongCatImageEditPipeline.from_pretrained(
-    checkpoint_dir,
-    transformer=transformer,
-    text_processor=text_processor,
-)
-pipe.to(device, torch.bfloat16)
+    pipe = LongCatImageEditPipeline.from_pretrained("meituan-longcat/LongCat-Image-Edit", torch_dtype= torch.bfloat16 )
+    # pipe.to(device, torch.bfloat16)  # Uncomment for high VRAM devices (Faster inference)
+    pipe.enable_model_cpu_offload()  # Offload to CPU to save VRAM (Required ~18 GB); slower but prevents OOM
 
-generator = torch.Generator("cpu").manual_seed(43)
-img = Image.open('assets/test.png').convert('RGB')
-prompt = '将猫变成狗'
-image = pipe(
-    img,
-    prompt,
-    negative_prompt='',
-    guidance_scale=4.5,
-    num_inference_steps=50,
-    num_images_per_prompt=1,
-    generator=generator
-).images[0]
+    img = Image.open('assets/test.png').convert('RGB')
+    prompt = '将猫变成狗'
+    image = pipe(
+        img,
+        prompt,
+        negative_prompt='',
+        guidance_scale=4.5,
+        num_inference_steps=50,
+        num_images_per_prompt=1,
+        generator=torch.Generator("cpu").manual_seed(43)
+    ).images[0]
 
-image.save('./edit_example.png')
+    image.save('./edit_example.png')
 
 ```
 
@@ -349,9 +329,16 @@ The quantitative evaluation results on public benchmarks demonstrate LongCat-Ima
 
 ## Training Pipeline
 
-We provide training code that enables advanced development of our LongCat‑Image‑Dev model, including SFT, LoRA, DPO, and Edit training.
+```shell
+cd LongCat-Image
+# for training, install other requirements
+pip install -r train_requirements.txt
+python setup.py develop
+```
 
-See [TRAINING.md](./examples/README.md) for detailed instructions.
+We provide training code that enables advanced development of our LongCat‑Image‑Dev and model, including SFT, LoRA, DPO, and Image Editing training.
+
+See [TRAINING.md](./train_examples/README.md) for detailed instructions.
 
 ## Community Works
 
@@ -361,6 +348,8 @@ Community works are welcome! Please PR or inform us in Issue to add your work.
 - [ComfyUI Integration] Native support for ComfyUI workflow
 - [Diffusers Pipeline] HuggingFace Diffusers integration
 - [SimpleTuner](https://github.com/bghira/SimpleTuner/blob/release/documentation/quickstart/LONGCAT_IMAGE.md) supports full-rank, LoRA, and LyCORIS training with scheduled sampling to reduce exposure bias
+- [ComfyUI Longcat Image](https://github.com/sooxt98/comfyui_longcat_image) - Custom node extension for ComfyUI workflow.
+
 
 ## License Agreement
 
@@ -381,21 +370,24 @@ Nothing in this Model Card should be interpreted as altering or restricting the 
 We kindly encourage citation of our work if you find it useful.
 
 ```bibtex
-@misc{LongCat-Image,
-    author={Meituan LongCat Team},
-    title={LongCat-Image Technical Report},
-    year={2025},
-    howpublished={\url{https://github.com/meituan-longcat/LongCat-Image}},
+@article{LongCat-Image,
+      title={LongCat-Image Technical Report},
+      author={Meituan LongCat Team and  Hanghang Ma and Haoxian Tan and Jiale Huang and Junqiang Wu and Jun-Yan He and Lishuai Gao and Songlin Xiao and Xiaoming Wei and Xiaoqi Ma and Xunliang Cai and Yayong Guan and Jie Hu},
+	    journal={arXiv preprint arXiv:2512.07584},
+      year={2025}
 }
 ```
 
 ## Acknowledgements
 
-We would like to thank the contributors to the [FLUX.1](https://github.com/black-forest-labs/flux), [Qwen2.5-VL](https://github.com/QwenLM/Qwen2.5-VL), [Diffusers](https://github.com/huggingface/diffusers) and [HuggingFace](https://huggingface.co) repositories, for their open research.
+We would like to thank the contributors to the [FLUX.1](https://github.com/black-forest-labs/flux), [Qwen2.5-VL](https://huggingface.co/Qwen/Qwen2.5-VL-7B-Instruct), [Diffusers](https://github.com/huggingface/diffusers) and [HuggingFace](https://huggingface.co) repositories, for their open research.
 
 ## Contact
 
 Please contact us at <a href="mailto:longcat-team@meituan.com">longcat-team@meituan.com</a> or join our WeChat Group if you have any questions.
+
+#### WeChat Group
+<img src=assets/wechat_qrcode.png width="200px">
 
 ---
 
