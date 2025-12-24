@@ -368,7 +368,7 @@ if __name__ == '__main__':
             # pop models so that they are not loaded again
             model = models.pop()
             # load diffusers style into model
-            load_model = MeiGenImageTransformer2DModel.from_pretrained(
+            load_model = LongCatImageTransformer2DModel.from_pretrained(
                 input_dir, subfolder="transformer")
             model.register_to_config(**load_model.config)
             model.load_state_dict(load_model.state_dict())

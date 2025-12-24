@@ -101,7 +101,6 @@ class MultiResolutionDistributedSampler(torch.utils.data.Sampler):
         except Exception as e:
             self.epoch += 1
             self.shuffle_bucker_index()
-            print(f'get error {e}.')
             raise StopIteration
 
     def __len__(self):
