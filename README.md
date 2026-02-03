@@ -387,6 +387,7 @@ Community works are welcome! Please PR or inform us in Issue to add your work.
 - [LoRA Adapters] Fine-tuned models for specific styles and domains
 - [ComfyUI Integration] Native support for ComfyUI workflow
 - [Diffusers Pipeline] HuggingFace Diffusers integration
+- [SimpleTuner](https://github.com/bghira/SimpleTuner/blob/release/documentation/quickstart/LONGCAT_IMAGE.md) supports full-rank, LoRA, and LyCORIS training with scheduled sampling to reduce exposure bias
 - [ComfyUI Longcat Image](https://github.com/sooxt98/comfyui_longcat_image) - Custom node extension for ComfyUI workflow.
 
 
