@@ -19,6 +19,7 @@
   <a href='https://huggingface.co/meituan-longcat/LongCat-Image'><img src='https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-LongCat--Image-blue'></a>
   <a href='https://huggingface.co/meituan-longcat/LongCat-Image-Dev'><img src='https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-LongCat--Image--Dev-blue'></a>
   <a href='https://huggingface.co/meituan-longcat/LongCat-Image-Edit'><img src='https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-LongCat--Image--Edit-blue'></a>
+  <a href='https://huggingface.co/meituan-longcat/LongCat-Image-Edit-Turbo'><img src='https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-LongCat--Image--Edit--Turbo-blue'></a>
 </div>
 
 ## Model Introduction
@@ -42,6 +43,7 @@ photorealism, deployment efficiency, and developer accessibility prevalent in cu
 [//]: # (For more details, please refer to the comprehensive [***LongCat-Image Technical Report***]&#40;https://arxiv.org/abs/2412.11963&#41;.)
 
 ### News
+- 🔥 **[2026-02-03]** We released [LongCat-Image-Edit-Turbo](https://huggingface.co/meituan-longcat/LongCat-Image-Edit-Turbo)! It is the distilled version of LongCat-Image-Edit, achieving a 10x speedup.
 - 🔥 **[2025-12-16]** LongCat-Image is now fully supported in **Diffusers**!
 - 🔥 **[2025-12-09]** [T2I-CoreBench](https://t2i-corebench.github.io/) results are out! LongCat-Image ranks **2nd** among all open-source models in comprehensive performance, surpassed only by the 32B-parameter Flux2.dev.
 - 🔥 **[2025-12-08]** We released our [Technical Report](https://www.arxiv.org/abs/2512.07584) on arXiv!
@@ -113,6 +115,14 @@ pip install git+https://github.com/huggingface/diffusers
           <span style="white-space: nowrap;">🤗&nbsp;<a href="https://huggingface.co/meituan-longcat/LongCat-Image-Edit">Huggingface</a></span>
         </td>
       </tr>
+      <tr>
+        <td style="white-space: nowrap; padding: 8px; border: 1px solid #d0d7de;">LongCat&#8209;Image&#8209;Edit&#8209;Turbo</td>
+        <td style="white-space: nowrap; padding: 8px; border: 1px solid #d0d7de;">Image Editing</td>
+        <td style="padding: 8px; border: 1px solid #d0d7de;">Distilled version of LongCat-Image-Edit with a 10x speedup.</td>
+        <td style="padding: 8px; border: 1px solid #d0d7de;">
+          <span style="white-space: nowrap;">🤗&nbsp;<a href="https://huggingface.co/meituan-longcat/LongCat-Image-Edit-Turbo">Huggingface</a></span>
+        </td>
+      </tr>
     </tbody>
   </table>
 </div>
@@ -141,7 +151,7 @@ if __name__ == '__main__':
     pipe.enable_model_cpu_offload()  # Offload to CPU to save VRAM (Required ~17 GB); slower but prevents OOM
 
     prompt = '一个年轻的亚裔女性，身穿黄色针织衫，搭配白色项链。她的双手放在膝盖上，表情恬静。背景是一堵粗糙的砖墙，午后的阳光温暖地洒在她身上，营造出一种宁静而温馨的氛围。镜头采用中距离视角，突出她的神态和服饰的细节。光线柔和地打在她的脸上，强调她的五官和饰品的质感，增加画面的层次感与亲和力。整个画面构图简洁，砖墙的纹理与阳光的光影效果相得益彰，突显出人物的优雅与从容。'
-    
+
     image = pipe(
         prompt,
         height=768,
@@ -156,7 +166,7 @@ if __name__ == '__main__':
     image.save('./t2i_example.png')
 ```
 
-### Run Image Editing
+### Run Image Editing (Standard Mode)
 
 ```python
 import torch
@@ -178,6 +188,36 @@ if __name__ == '__main__':
         negative_prompt='',
         guidance_scale=4.5,
         num_inference_steps=50,
+        num_images_per_prompt=1,
+        generator=torch.Generator("cpu").manual_seed(43)
+    ).images[0]
+
+    image.save('./edit_example.png')
+
+```
+
+### Run Image Editing (Turbo Mode)
+
+```python
+import torch
+from PIL import Image
+from diffusers import LongCatImageEditPipeline
+
+if __name__ == '__main__':
+    device = torch.device('cuda')
+
+    pipe = LongCatImageEditPipeline.from_pretrained("meituan-longcat/LongCat-Image-Edit-Turbo", torch_dtype= torch.bfloat16 )
+    # pipe.to(device, torch.bfloat16)  # Uncomment for high VRAM devices (Faster inference)
+    pipe.enable_model_cpu_offload()  # Offload to CPU to save VRAM (Required ~18 GB); slower but prevents OOM
+
+    img = Image.open('assets/test.png').convert('RGB')
+    prompt = '将猫变成狗'
+    image = pipe(
+        img,
+        prompt,
+        negative_prompt='',
+        guidance_scale=1,
+        num_inference_steps=8,
         num_images_per_prompt=1,
         generator=torch.Generator("cpu").manual_seed(43)
     ).images[0]
