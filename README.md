@@ -419,7 +419,7 @@ We would like to thank the contributors to the [FLUX.1](https://github.com/black
 Please contact us at <a href="mailto:longcat-team@meituan.com">longcat-team@meituan.com</a> or join our WeChat Group if you have any questions.
 
 #### WeChat Group
-<img src=assets/Wechat.png width="200px">
+<img src="https://raw.githubusercontent.com/meituan-longcat/LongCat-Flash-Chat/main/wechat-assets/Wechat.png" width="200px">
 
 ---
 
